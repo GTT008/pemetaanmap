@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeoPoint Studio - Generator Peta Koordinat & Google Maps</title>
+    <meta name="description" content="Aplikasi visualisasi koordinat peta dari Excel, CSV, atau manual dengan peta interaktif Leaflet, Google Satelit, Rute Google Maps, dan simulasi tampilan mobile/desktop. Data 100% sementara & aman di browser.">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"/>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Top Navigation / Header -->
+    <header class="app-header">
+        <div class="header-brand">
+            <div class="brand-icon">
+                <i class="fa-solid fa-map-location-dot"></i>
+            </div>
+            <div>
+                <h1 class="brand-title">GeoPoint Studio</h1>
+                <p class="brand-subtitle">Generator Peta Koordinat & Rute Google Maps</p>
+            </div>
+        </div>
+
+        <div class="header-actions">
+            <div class="badge-memory" title="Data 100% berada di browser Anda. Tidak ada data yang disimpan di server. Refresh halaman akan menghapus data.">
+                <i class="fa-solid fa-shield-halved"></i> Data Sementara (Client-Side)
+            </div>
+
+            <button class="btn-danger-outline" onclick="resetAllData()" title="Hapus semua titik">
+                <i class="fa-solid fa-trash-can"></i> Reset Data
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace Area (Fluid & Responsive Dimensions) -->
+    <main class="app-main" id="mainContainer">
+        <div class="app-layout" id="appLayout">
+                
+                <!-- Left Control Panel / Sidebar -->
+                <aside class="control-panel">
+                    
+                    <!-- Tabs for Input Methods -->
+                    <div class="input-tabs">
+                        <button class="tab-btn active" onclick="switchTab('tab-excel')">
+                            <i class="fa-solid fa-paste"></i> Paste Excel
+                        </button>
+                        <button class="tab-btn" onclick="switchTab('tab-file')">
+                            <i class="fa-solid fa-file-arrow-up"></i> Drop File
+                        </button>
+                        <button class="tab-btn" onclick="switchTab('tab-manual')">
+                            <i class="fa-solid fa-pen-to-square"></i> Manual
+                        </button>
+                    </div>
+
+                    <div class="tab-contents">
+                        
+                        <!-- TAB 1: Copy Paste Excel -->
+                        <div id="tab-excel" class="tab-content active">
+                            <div class="section-desc">
+                                <i class="fa-solid fa-table-cells"></i>
+                                <span>Copy tabel dari Excel/Google Sheets (Kolom: <b>Nama</b>, <b>Latitude</b>, <b>Longitude</b>) lalu paste di bawah.</span>
+                            </div>
+
+                            <!-- Paste Textarea -->
+                            <textarea id="pasteInput" class="custom-textarea" placeholder="Format Kolom Excel (Nama [TAB] Lat [TAB] Lng):&#10;Lokasi Sampel A&#9;-2.5382715&#9;140.7116208&#10;Lokasi Sampel B&#9;-2.5110452&#9;140.7053244&#10;Lokasi Sampel C&#9;-2.6034193&#9;140.6823876"></textarea>
+
+                            <div class="btn-row">
+                                <button class="btn-primary" onclick="parseExcelPaste()">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> Masukkan ke Tabel Grid
+                                </button>
+                                <button class="btn-secondary" onclick="loadSampleData()">
+                                    <i class="fa-solid fa-flask"></i> Contoh Data
+                                </button>
+                            </div>
+
+                            <!-- Interactive Excel Column Grid Container -->
+                            <div class="excel-grid-container">
+                                <div class="grid-toolbar">
+                                    <span class="grid-title"><i class="fa-solid fa-table"></i> Preview Kolom Excel</span>
+                                    <div class="grid-actions">
+                                        <button class="btn-grid-action" onclick="addGridRow()">
+                                            <i class="fa-solid fa-plus"></i> Baris Baru
+                                        </button>
+                                        <button class="btn-grid-action danger" onclick="clearGridRows()">
+                                            <i class="fa-solid fa-trash-can"></i> Bersihkan
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="table-scroll-wrapper">
+                                    <table class="excel-table" id="excelGridTable">
+                                        <thead>
+                                            <tr>
+                                                <th style="width: 38px;">#</th>
+                                                <th>Nama Tempat</th>
+                                                <th>Latitude (Y)</th>
+                                                <th>Longitude (X)</th>
+                                                <th style="width: 40px;"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="excelGridBody">
+                                            <!-- Dynamic grid rows populated by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <button class="btn-primary btn-block" onclick="applyGridToMap()" style="margin-top: 8px;">
+                                    <i class="fa-solid fa-map-location-dot"></i> Tampilkan Semua ke Peta
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- TAB 2: Drag & Drop File -->
+                        <div id="tab-file" class="tab-content">
+                            <div id="dropZone" class="drop-zone">
+                                <div class="drop-zone-icon">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                                </div>
+                                <h4>Tarik & Lepas File di Sini</h4>
+                                <p>Mendukung file <b>.xlsx, .xls, .csv, .txt, .json</b></p>
+                                <div class="drop-zone-divider">atau</div>
+                                <button class="btn-secondary btn-sm" onclick="document.getElementById('fileInput').click()">
+                                    <i class="fa-solid fa-folder-open"></i> Pilih File dari Perangkat
+                                </button>
+                                <input type="file" id="fileInput" accept=".xlsx,.xls,.csv,.txt,.json" style="display: none;" onchange="handleFileSelect(event)">
+                            </div>
+                        </div>
+
+                        <!-- TAB 3: Input Manual -->
+                        <div id="tab-manual" class="tab-content">
+                            <form id="manualForm" onsubmit="handleManualSubmit(event)" class="manual-form">
+                                <div class="form-group">
+                                    <label for="inputNama">Nama Tempat / Label</label>
+                                    <input type="text" id="inputNama" class="custom-input" placeholder="Contoh: Toko Barokah Jaya" required>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="inputLat">Latitude (Y)</label>
+                                        <input type="number" step="any" id="inputLat" class="custom-input" placeholder="-2.5382715" required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="inputLng">Longitude (X)</label>
+                                        <input type="number" step="any" id="inputLng" class="custom-input" placeholder="140.7116208" required>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn-primary">
+                                    <i class="fa-solid fa-plus"></i> Tambahkan Titik
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Statistics & Multi-Point Google Maps Route Actions -->
+                    <div class="stats-card">
+                        <div class="stats-header">
+                            <div>
+                                <span class="stats-label">Total Titik Lokasi</span>
+                                <div class="stats-value" id="pointCount">0 Titik</div>
+                            </div>
+                            <button class="btn-icon-danger" onclick="clearPoints()" title="Kosongkan Semua Titik">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+
+                        <div class="action-buttons-stack">
+                            <a id="btnOpenAllGmaps" href="#" target="_blank" class="btn-gmaps disabled" onclick="return checkGmapsLink(event)">
+                                <i class="fa-solid fa-route"></i> 🚀 Buka Rute Semua Titik di Google Maps
+                            </a>
+                            <button id="btnCopyAllGmaps" class="btn-copy-route disabled" onclick="copyAllRouteLink()">
+                                <i class="fa-regular fa-copy"></i> Salin Link Rute Google Maps
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Points List Table -->
+                    <div class="points-list-container">
+                        <div class="list-header">
+                            <h3><i class="fa-solid fa-list-ul"></i> Daftar Titik Koordinat</h3>
+                            <span class="badge-count" id="badgeCount">0</span>
+                        </div>
+                        <div class="points-list" id="pointsList">
+                            <div class="empty-state">
+                                <i class="fa-solid fa-map-pin"></i>
+                                <p>Belum ada titik koordinat. Masukkan data via Paste Excel, Drop File, atau Input Manual.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                </aside>
+
+                <!-- Right Interactive Map Panel -->
+                <section class="map-panel">
+                    
+                    <!-- Floating Route Header inside Map -->
+                    <div class="map-overlay-banner" id="mapOverlayBanner">
+                        <div class="banner-title">
+                            <i class="fa-solid fa-earth-asia"></i> Peta Interaktif (<span id="bannerCount">0</span> Titik)
+                        </div>
+                        <a id="bannerGmapsLink" href="#" target="_blank" class="banner-btn disabled" onclick="return checkGmapsLink(event)">
+                            <i class="fa-solid fa-location-arrow"></i> Buka Rute Google Maps
+                        </a>
+                    </div>
+
+                    <!-- Leaflet Container -->
+                    <div id="map" class="map-container"></div>
+                </section>
+            </div>
+    </main>
+
+    <!-- Global Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- SheetJS (XLSX) Library CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <!-- Leaflet JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Custom Application Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
